@@ -10,4 +10,5 @@ between the nodes in the network
 forms: tcp udp websockets ..etc
 */
 type Transport interface {
+	ListenAndAccept() error
 }

@@ -20,7 +20,7 @@ func NewTCPTransport(listenAddr string) *TcpTransport {
 	}
 }
 
-func (t *TcpTransport) listenAndAccept() error {
+func (t *TcpTransport) ListenAndAccept() error {
 
 	var err error
 	t.listener, err = net.Listen("tcp", t.listenAddress)
