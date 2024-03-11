@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"sync"
 )
 
 // TCPPeer represents the remote node over a TCP established connection
@@ -28,8 +27,6 @@ type TcpTransport struct {
 	TcpTransportOpts
 	listener net.Listener
 	RpcCh    chan RPC
-	mu       sync.RWMutex
-	peers    map[net.Addr]Peer
 }
 
 func NewTcpPeer(conn net.Conn, outbound bool) *TCPPeer {
