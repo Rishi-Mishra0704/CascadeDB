@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/Rishi-Mishra0704/distributed-cas/p2p"
@@ -16,6 +17,11 @@ func main() {
 	if err := tr.ListenAndAccept(); err != nil {
 		log.Fatal(err)
 	}
-
+	go func() {
+		for {
+			msg := <-tr.Consume()
+			fmt.Printf("%+v\n", msg)
+		}
+	}()
 	select {}
 }

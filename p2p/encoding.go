@@ -12,20 +12,20 @@ type Decoder interface {
 type GobDecoder struct {
 }
 
-func (doc GobDecoder) Decode(r io.Reader, m *RPC) error {
-	return gob.NewDecoder(r).Decode(m)
+func (doc GobDecoder) Decode(r io.Reader, rpc *RPC) error {
+	return gob.NewDecoder(r).Decode(rpc)
 }
 
 type DefaultDecoder struct {
 }
 
-func (doc DefaultDecoder) Decode(r io.Reader, m *RPC) error {
+func (doc DefaultDecoder) Decode(r io.Reader, rpc *RPC) error {
 	buf := make([]byte, 1028)
 	n, err := r.Read(buf)
 	if err != nil {
 		return err
 	}
-	m.Payload = buf[:n]
+	rpc.Payload = buf[:n]
 	return nil
 
 }
