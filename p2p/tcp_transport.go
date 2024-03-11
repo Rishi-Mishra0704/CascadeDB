@@ -79,7 +79,7 @@ func (t *TcpTransport) handleConn(conn net.Conn) {
 		return
 	}
 	// Read loop
-	msg := &Message{}
+	msg := &RPC{}
 	for {
 		if err := t.Decoder.Decode(conn, msg); err != nil {
 			fmt.Printf("TCP error %s\n", err)

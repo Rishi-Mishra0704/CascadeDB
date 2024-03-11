@@ -9,7 +9,7 @@ between two nodes in a network
 
 
 */
-type Message struct {
+type RPC struct {
 	From    net.Addr
 	Payload []byte
 }
