@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"os"
 	"strings"
@@ -39,7 +40,7 @@ type PathKey struct {
 	FileName string
 }
 
-func (p PathKey) FullPth() string {
+func (p PathKey) FullPath() string {
 	return fmt.Sprintf("%s/%s", p.PathName, p.FileName)
 }
 
@@ -61,6 +62,32 @@ var DefaultTransformFunc = func(key string) string {
 	return key
 }
 
+func (p PathKey) firstPathName() string {
+	paths := strings.Split(p.PathName, "/")
+
+	if len(paths) == 0 {
+		return ""
+	}
+	return paths[0]
+}
+
+func (s *Store) Has(key string) bool {
+	pathKey := s.PathTransformFunc(key)
+
+	_, err := os.Stat(pathKey.FullPath())
+	if err == fs.ErrNotExist {
+		return false
+	}
+	return true
+}
+
+func (s *Store) Delete(key string) error {
+	pathKey := s.PathTransformFunc(key)
+	defer func() {
+		log.Printf("deleted [%s] from disk", pathKey.FileName)
+	}()
+	return os.RemoveAll(pathKey.firstPathName())
+}
 func (s *Store) Read(key string) (io.Reader, error) {
 	f, err := s.readStream(key)
 	if err != nil {
@@ -78,7 +105,7 @@ func (s *Store) Read(key string) (io.Reader, error) {
 func (s *Store) readStream(key string) (io.ReadCloser, error) {
 	PathKey := s.PathTransformFunc(key)
 
-	return os.Open(PathKey.FullPth())
+	return os.Open(PathKey.FullPath())
 }
 
 func (s *Store) WriteStream(key string, r io.Reader) error {
@@ -87,12 +114,14 @@ func (s *Store) WriteStream(key string, r io.Reader) error {
 		return err
 	}
 
-	pathAndFileName := PathKey.FullPth()
+	pathAndFileName := PathKey.FullPath()
 
 	f, err := os.Create(pathAndFileName)
 	if err != nil {
 		return err
 	}
+
+	defer f.Close()
 	n, err := io.Copy(f, r)
 	if err != nil {
 		return err

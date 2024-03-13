@@ -21,15 +21,33 @@ func TestPathTransformFunc(t *testing.T) {
 	}
 }
 
+func TestDeleteFunc(t *testing.T) {
+	opts := StoreOpts{
+		PathTransformFunc: CasPathTransformFunc,
+	}
+	s := NewStore(opts)
+
+	key := "test"
+
+	data := []byte("some jpg in bytes")
+
+	if err := s.WriteStream(key, bytes.NewReader(data)); err != nil {
+		t.Error(err)
+	}
+	if err := s.Delete(key); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestStore(t *testing.T) {
 	opts := StoreOpts{
 		PathTransformFunc: CasPathTransformFunc,
 	}
 	s := NewStore(opts)
 
-	key := "momspecials"
+	key := "test"
 
-	data := []byte("some jpg bytes")
+	data := []byte("some jpg in bytes")
 
 	if err := s.WriteStream(key, bytes.NewReader(data)); err != nil {
 		t.Error(err)
