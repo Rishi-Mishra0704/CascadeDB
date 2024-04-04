@@ -94,11 +94,6 @@ func (t *TcpTransport) handleConn(conn net.Conn) {
 		return
 	}
 
-	if t.OnPeer != nil {
-		if err := t.OnPeer(peer); err != nil {
-			return
-		}
-	}
 	// Read loop
 	rpc := RPC{}
 	for {
