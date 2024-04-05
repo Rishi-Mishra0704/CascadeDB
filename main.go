@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
 	"log"
+	"net"
+	"strings"
 
 	"github.com/Rishi-Mishra0704/distributed-cas/p2p"
 	"github.com/Rishi-Mishra0704/distributed-cas/store"
@@ -35,6 +38,21 @@ func handleWrite(key string, data []byte, casStore *store.Store) {
 	fmt.Printf("Data written successfully to store\n")
 }
 
+func handlePost(key string, conn net.Conn, casStore *store.Store) error {
+	// Read the data from the TCP connection
+	data, err := bufio.NewReader(conn).ReadString('\n')
+	if err != nil {
+		return err
+	}
+
+	// Post data to the store
+	err = casStore.Post(key, strings.NewReader(data))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func OnPeer(peer p2p.Peer) error {
 	peer.Close()
 	return nil
@@ -46,6 +64,18 @@ func main() {
 		PathTransformFunc: store.CasPathTransformFunc,
 	}
 	casStore := store.NewStore(storeOpts)
+
+	// Create and start the TCP transport
+	tcpOpts := p2p.TcpTransportOpts{
+		ListenAddr:    ":3000",
+		HandShakeFunc: p2p.NOPHandShakeFunc,
+		Decoder:       p2p.DefaultDecoder{},
+		OnPeer:        OnPeer,
+	}
+	tr := p2p.NewTCPTransport(tcpOpts)
+	if err := tr.ListenAndAccept(); err != nil {
+		log.Fatal(err)
+	}
 
 	// Example usage of store methods
 	key := "example_key"
@@ -64,18 +94,6 @@ func main() {
 
 	// Read data from the store
 	handleRead(key, casStore)
-
-	// Create and start the TCP transport
-	tcpOpts := p2p.TcpTransportOpts{
-		ListenAddr:    ":3000",
-		HandShakeFunc: p2p.NOPHandShakeFunc,
-		Decoder:       p2p.DefaultDecoder{},
-		OnPeer:        OnPeer,
-	}
-	tr := p2p.NewTCPTransport(tcpOpts)
-	if err := tr.ListenAndAccept(); err != nil {
-		log.Fatal(err)
-	}
 
 	// Start consuming messages from the transport
 	go func() {
