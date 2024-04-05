@@ -81,6 +81,36 @@ func (s *Store) Has(key string) bool {
 	return true
 }
 
+func (s *Store) Post(key string, content io.Reader) error {
+	// Transform the key into a PathKey
+	pathKey := s.PathTransformFunc(key)
+
+	// Create the full path for storing the content
+	pathAndFileName := pathKey.FullPath()
+
+	// Create any necessary directories
+	if err := os.MkdirAll(pathKey.PathName, os.ModePerm); err != nil {
+		return err
+	}
+
+	// Create or open the file for writing
+	f, err := os.Create(pathAndFileName)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	// Write the content to the file
+	n, err := io.Copy(f, content)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("written %d bytes to disk: %s", n, pathAndFileName)
+
+	return nil
+}
+
 func (s *Store) Delete(key string) error {
 	pathKey := s.PathTransformFunc(key)
 	defer func() {
