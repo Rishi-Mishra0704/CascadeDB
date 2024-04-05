@@ -81,7 +81,7 @@ func (s *Store) Has(key string) bool {
 	return true
 }
 
-func (s *Store) Post(key string, content io.Reader) error {
+func (s *Store) Put(key string, content io.Reader) error {
 	// Transform the key into a PathKey
 	pathKey := s.PathTransformFunc(key)
 

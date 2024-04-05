@@ -6,6 +6,11 @@ import (
 	"net"
 )
 
+type HandleConnInfo struct {
+	Conn net.Conn
+	Port int
+}
+
 // TCPPeer represents the remote node over a TCP established connection
 type TCPPeer struct {
 
@@ -22,6 +27,7 @@ type TcpTransportOpts struct {
 	HandShakeFunc HandShakeFunc
 	Decoder       Decoder
 	OnPeer        func(Peer) error
+	HandleConnCh  chan HandleConnInfo
 }
 
 type TcpTransport struct {
@@ -72,11 +78,17 @@ func (t *TcpTransport) startAcceptLoop() {
 		conn, err := t.listener.Accept()
 		if err != nil {
 			fmt.Printf("TCP accept error %s\n", err)
+			continue
 		}
 		fmt.Printf("New incoming connection %v\n", conn)
 
-		go t.handleConn(conn)
+		// Dynamically determine the listening port based on the accepted connection
+		port := conn.LocalAddr().(*net.TCPAddr).Port
+		fmt.Printf("Connection established on port %d\n", port)
 
+		// Send the connection and port via a channel
+		t.HandleConnCh <- HandleConnInfo{conn, port}
+		t.handleConn(conn)
 	}
 }
 

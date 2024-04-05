@@ -38,24 +38,50 @@ func handleWrite(key string, data []byte, casStore *store.Store) {
 	fmt.Printf("Data written successfully to store\n")
 }
 
-func handlePost(key string, conn net.Conn, casStore *store.Store) error {
-	// Read the data from the TCP connection
-	data, err := bufio.NewReader(conn).ReadString('\n')
-	if err != nil {
-		return err
-	}
-
-	// Post data to the store
-	err = casStore.Post(key, strings.NewReader(data))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func OnPeer(peer p2p.Peer) error {
 	peer.Close()
 	return nil
+}
+func handlePut(conn net.Conn, casStore *store.Store) {
+	// Read key from client
+	scanner := bufio.NewScanner(conn)
+	fmt.Fprint(conn, "Enter key: ")
+
+	var key string
+
+	// Read key synchronously
+	for scanner.Scan() {
+		key = strings.TrimSpace(scanner.Text())
+		if key != "" {
+			break
+		}
+	}
+
+	fmt.Printf("Received key: %s\n", key)
+
+	// Read data from client until a line break is encountered
+	fmt.Fprint(conn, "Enter data: ")
+	var dataBuf bytes.Buffer
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			continue // Skip empty lines
+		}
+		if line == "." {
+			break // Stop reading if "." is entered
+		}
+		dataBuf.WriteString(line)
+	}
+	data := dataBuf.Bytes()
+
+	// Write data to the store
+	err := casStore.Put(key, bytes.NewReader(data))
+	if err != nil {
+		log.Printf("Error writing data to store: %v\n", err)
+		return
+	}
+
+	fmt.Fprintln(conn, "Data written successfully to store")
 }
 
 func main() {
@@ -71,6 +97,7 @@ func main() {
 		HandShakeFunc: p2p.NOPHandShakeFunc,
 		Decoder:       p2p.DefaultDecoder{},
 		OnPeer:        OnPeer,
+		HandleConnCh:  make(chan p2p.HandleConnInfo),
 	}
 	tr := p2p.NewTCPTransport(tcpOpts)
 	if err := tr.ListenAndAccept(); err != nil {
@@ -102,7 +129,10 @@ func main() {
 			fmt.Printf("%+v\n", msg)
 		}
 	}()
-
-	// Keep the main goroutine alive
-	select {}
+	for {
+		info := <-tr.HandleConnCh
+		if info.Port == 3000 {
+			go handlePut(info.Conn, casStore)
+		}
+	}
 }
