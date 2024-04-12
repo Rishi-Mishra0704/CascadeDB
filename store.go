@@ -12,6 +12,8 @@ import (
 	"strings"
 )
 
+const DefaultRootFolderName = "GGNetwork"
+
 func CasPathTransformFunc(key string) PathKey {
 	hash := sha1.Sum([]byte(key))
 	hashStr := hex.EncodeToString(hash[:])
@@ -45,6 +47,8 @@ func (p PathKey) FullPath() string {
 }
 
 type StoreOpts struct {
+	// Root is the root directory where the files will be stored
+	Root              string
 	PathTransformFunc PathTransformFunc
 }
 
@@ -55,6 +59,9 @@ type Store struct {
 func NewStore(opts StoreOpts) *Store {
 	if opts.PathTransformFunc == nil {
 		opts.PathTransformFunc = DefaultTransformFunc
+	}
+	if len(opts.Root) == 0 {
+		opts.Root = DefaultRootFolderName
 	}
 	return &Store{
 		StoreOpts: opts,
@@ -88,10 +95,11 @@ func (s *Store) Has(key string) bool {
 
 func (s *Store) Delete(key string) error {
 	pathKey := s.PathTransformFunc(key)
+	firstPathNameWithRoot := fmt.Sprintf("%s/%s", s.Root, pathKey.firstPathName())
 	defer func() {
 		log.Printf("deleted [%s] from disk", pathKey.FileName)
 	}()
-	return os.RemoveAll(pathKey.firstPathName())
+	return os.RemoveAll(firstPathNameWithRoot)
 }
 func (s *Store) Read(key string) (io.Reader, error) {
 	f, err := s.readStream(key)
@@ -109,19 +117,20 @@ func (s *Store) Read(key string) (io.Reader, error) {
 
 func (s *Store) readStream(key string) (io.ReadCloser, error) {
 	PathKey := s.PathTransformFunc(key)
-
-	return os.Open(PathKey.FullPath())
+	fullPathWithRoot := fmt.Sprintf("%s/%s", s.Root, PathKey.FullPath())
+	return os.Open(fullPathWithRoot)
 }
 
 func (s *Store) WriteStream(key string, r io.Reader) error {
 	PathKey := s.PathTransformFunc(key)
-	if err := os.MkdirAll(PathKey.PathName, os.ModePerm); err != nil {
+	pathKeyWithRoot := fmt.Sprintf("%s/%s", s.Root, PathKey.PathName)
+	if err := os.MkdirAll(pathKeyWithRoot, os.ModePerm); err != nil {
 		return err
 	}
 
-	pathAndFileName := PathKey.FullPath()
+	fullPathWithRoot := fmt.Sprintf("%s/%s", s.Root, PathKey.FullPath())
 
-	f, err := os.Create(pathAndFileName)
+	f, err := os.Create(fullPathWithRoot)
 	if err != nil {
 		return err
 	}
@@ -132,7 +141,7 @@ func (s *Store) WriteStream(key string, r io.Reader) error {
 		return err
 	}
 
-	log.Printf("written %d bytes to disk: %s", n, pathAndFileName)
+	log.Printf("written %d bytes to disk: %s", n, fullPathWithRoot)
 
 	return nil
 }
