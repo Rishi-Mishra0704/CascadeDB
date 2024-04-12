@@ -1,4 +1,4 @@
-package store
+package server
 
 import (
 	"bytes"
@@ -125,6 +125,10 @@ func (s *Store) readStream(key string) (io.ReadCloser, error) {
 	PathKey := s.PathTransformFunc(key)
 	fullPathWithRoot := fmt.Sprintf("%s/%s", s.Root, PathKey.FullPath())
 	return os.Open(fullPathWithRoot)
+}
+
+func (s *Store) Write(key string, data []byte) error {
+	return s.WriteStream(key, bytes.NewReader(data))
 }
 
 func (s *Store) WriteStream(key string, r io.Reader) error {
