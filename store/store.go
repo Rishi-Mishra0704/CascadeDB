@@ -68,6 +68,10 @@ func NewStore(opts StoreOpts) *Store {
 	}
 }
 
+func (s *Store) Clear() error {
+	return os.RemoveAll(s.Root)
+}
+
 var DefaultTransformFunc = func(key string) PathKey {
 	return PathKey{
 		PathName: key,
