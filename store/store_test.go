@@ -7,19 +7,6 @@ import (
 	"testing"
 )
 
-func newStore() *Store {
-	opts := StoreOpts{
-		PathTransformFunc: CasPathTransformFunc,
-	}
-	return NewStore(opts)
-}
-
-func teardown(t *testing.T, s *Store) {
-	if err := s.Clear(); err != nil {
-		t.Error(err)
-	}
-}
-
 func TestPathTransformFunc(t *testing.T) {
 	key := "mombestpicture"
 	PathKey := CasPathTransformFunc(key)
@@ -55,28 +42,54 @@ func TestDeleteFunc(t *testing.T) {
 func TestStore(t *testing.T) {
 	s := newStore()
 	defer teardown(t, s)
+	for i := 0; i <= 50; i++ {
 
-	key := "test"
+		key := fmt.Sprintf("test%d", i)
 
-	data := []byte("some jpg in bytes")
+		data := generateRandomBytes(100)
 
-	if err := s.WriteStream(key, bytes.NewReader(data)); err != nil {
+		if err := s.WriteStream(key, bytes.NewReader(data)); err != nil {
+			t.Error(err)
+		}
+
+		if ok := s.Has(key); !ok {
+			t.Errorf("expected to have key %s", key)
+		}
+
+		r, err := s.Read(key)
+		if err != nil {
+			t.Error(err)
+		}
+
+		b, _ := io.ReadAll(r)
+		if string(b) != string(data) {
+			t.Errorf("want %s have %s", data, b)
+		}
+
+		if err := s.Delete(key); err != nil {
+			t.Error(err)
+		}
+
+		if ok := s.Has(key); ok {
+			t.Errorf("expected to NOT have key %s", key)
+		}
+
+	}
+}
+func newStore() *Store {
+	opts := StoreOpts{
+		PathTransformFunc: CasPathTransformFunc,
+	}
+	return NewStore(opts)
+}
+
+func teardown(t *testing.T, s *Store) {
+	if err := s.Clear(); err != nil {
 		t.Error(err)
 	}
+}
 
-	if ok := s.Has(key); !ok {
-		t.Errorf("key %s not found", key)
-	}
-
-	r, err := s.Read(key)
-	if err != nil {
-		t.Error(err)
-	}
-
-	b, _ := io.ReadAll(r)
-	if string(b) != string(data) {
-		t.Errorf("want %s have %s", data, b)
-	}
-
-	s.Delete(key)
+func generateRandomBytes(n int) []byte {
+	b := make([]byte, n)
+	return b
 }
