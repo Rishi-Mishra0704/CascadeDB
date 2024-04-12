@@ -1,4 +1,4 @@
-package main
+package store
 
 import (
 	"bytes"
@@ -85,8 +85,8 @@ func (p PathKey) firstPathName() string {
 
 func (s *Store) Has(key string) bool {
 	pathKey := s.PathTransformFunc(key)
-
-	_, err := os.Stat(pathKey.FullPath())
+	fullPathWithRoot := fmt.Sprintf("%s/%s", s.Root, PathKey.FullPath(pathKey))
+	_, err := os.Stat(fullPathWithRoot)
 	if err == fs.ErrNotExist {
 		return false
 	}
