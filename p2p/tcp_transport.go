@@ -64,6 +64,8 @@ func (t *TcpTransport) ListenAndAccept() error {
 
 	go t.startAcceptLoop()
 
+	log.Printf("Tcp Transport listening on port%s\n", t.ListenAddr)
+
 	return nil
 }
 
