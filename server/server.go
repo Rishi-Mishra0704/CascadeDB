@@ -1,6 +1,10 @@
 package server
 
-import "github.com/Rishi-Mishra0704/distributed-cas/p2p"
+import (
+	"fmt"
+
+	"github.com/Rishi-Mishra0704/distributed-cas/p2p"
+)
 
 type FileServerOpts struct {
 	ListenAddr        string
@@ -11,7 +15,9 @@ type FileServerOpts struct {
 
 type FileServer struct {
 	FileServerOpts
-	Store *Store
+
+	Store  *Store
+	QuitCh chan struct{}
 }
 
 func NewFileServer(opts FileServerOpts) *FileServer {
@@ -23,12 +29,38 @@ func NewFileServer(opts FileServerOpts) *FileServer {
 	return &FileServer{
 		FileServerOpts: opts,
 		Store:          NewStore(storeOpts),
+		QuitCh:         make(chan struct{}),
 	}
 }
 
-func (s *FileServerOpts) Start() error {
+func (s *FileServer) Stop() {
+	close(s.QuitCh)
+
+}
+
+func (s *FileServer) Loop() {
+	defer func() {
+		fmt.Println("Closing the file server due to quit action")
+		s.Transport.Close()
+	}()
+
+	for {
+		select {
+		case msg := <-s.Transport.Consume():
+			fmt.Println(msg)
+
+		case <-s.QuitCh:
+			return
+		}
+
+	}
+}
+
+func (s *FileServer) Start() error {
 	if err := s.Transport.ListenAndAccept(); err != nil {
 		return err
 	}
+
+	s.Loop()
 	return nil
 }

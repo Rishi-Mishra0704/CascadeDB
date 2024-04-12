@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/Rishi-Mishra0704/distributed-cas/p2p"
 	"github.com/Rishi-Mishra0704/distributed-cas/server"
@@ -24,9 +25,12 @@ func main() {
 		Transport:         tcpTransport,
 	}
 	fileServer := server.NewFileServer(fileServerOpts)
+	go func() {
+		time.Sleep(3 * time.Second)
+		fileServer.Stop()
+	}()
 	if err := fileServer.Start(); err != nil {
 		log.Fatalf("Error starting file server: %v", err)
 	}
 
-	select {}
 }

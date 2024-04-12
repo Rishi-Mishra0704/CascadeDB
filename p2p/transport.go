@@ -13,4 +13,5 @@ forms: tcp udp websockets ..etc
 type Transport interface {
 	ListenAndAccept() error
 	Consume() <-chan RPC
+	Close() error
 }
