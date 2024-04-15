@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"log"
+	"time"
 
 	"github.com/Rishi-Mishra0704/distributed-cas/p2p"
 	"github.com/Rishi-Mishra0704/distributed-cas/server"
@@ -34,5 +36,11 @@ func main() {
 	go func() {
 		log.Fatal(s1.Start())
 	}()
-	s2.Start()
+	time.Sleep(1 * time.Second)
+	go s2.Start()
+	time.Sleep(1 * time.Second)
+	data := bytes.NewReader([]byte("some very big data file!!!"))
+	s2.StoreData("myprivatebigdata", data)
+
+	select {}
 }

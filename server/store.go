@@ -113,10 +113,9 @@ func (s *Store) Read(key string) (io.Reader, error) {
 		return nil, err
 	}
 
-	defer f.Close()
-
 	buf := new(bytes.Buffer)
 	_, err = io.Copy(buf, f)
+	f.Close()
 
 	return buf, err
 }
@@ -127,8 +126,8 @@ func (s *Store) readStream(key string) (io.ReadCloser, error) {
 	return os.Open(fullPathWithRoot)
 }
 
-func (s *Store) Write(key string, data []byte) error {
-	return s.WriteStream(key, bytes.NewReader(data))
+func (s *Store) Write(key string, r io.Reader) error {
+	return s.WriteStream(key, r)
 }
 
 func (s *Store) WriteStream(key string, r io.Reader) error {
