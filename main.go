@@ -38,7 +38,7 @@ func main() {
 	}()
 	time.Sleep(1 * time.Second)
 	go s2.Start()
-	time.Sleep(1 * time.Second)
+	time.Sleep(5 * time.Second)
 	data := bytes.NewReader([]byte("some very big data file!!!"))
 	s2.StoreData("myprivatebigdata", data)
 
