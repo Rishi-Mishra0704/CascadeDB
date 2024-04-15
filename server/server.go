@@ -2,6 +2,8 @@ package server
 
 import (
 	"fmt"
+	"log"
+	"sync"
 
 	"github.com/Rishi-Mishra0704/distributed-cas/p2p"
 )
@@ -11,13 +13,16 @@ type FileServerOpts struct {
 	StorageRoot       string
 	PathTransformFunc PathTransformFunc
 	Transport         p2p.Transport
+	BootstrapNodes    []string
 }
 
 type FileServer struct {
 	FileServerOpts
 
-	Store  *Store
-	QuitCh chan struct{}
+	Peerlock sync.Mutex
+	Peers    map[string]p2p.Peer
+	Store    *Store
+	QuitCh   chan struct{}
 }
 
 func NewFileServer(opts FileServerOpts) *FileServer {
@@ -30,12 +35,23 @@ func NewFileServer(opts FileServerOpts) *FileServer {
 		FileServerOpts: opts,
 		Store:          NewStore(storeOpts),
 		QuitCh:         make(chan struct{}),
+		Peers:          make(map[string]p2p.Peer),
 	}
 }
 
 func (s *FileServer) Stop() {
 	close(s.QuitCh)
 
+}
+
+func (s *FileServer) OnPeer(p p2p.Peer) error {
+	s.Peerlock.Lock()
+	defer s.Peerlock.Unlock()
+
+	s.Peers[p.RemoteAddr().String()] = p
+
+	log.Printf("connected with remote: %s", p.RemoteAddr())
+	return nil
 }
 
 func (s *FileServer) Loop() {
@@ -56,10 +72,28 @@ func (s *FileServer) Loop() {
 	}
 }
 
+func (s *FileServer) bootstrapNetwork() error {
+	for _, addr := range s.BootstrapNodes {
+		if len(addr) == 0 {
+			continue
+		}
+		go func(addr string) {
+			fmt.Println("attempting to connect with: ", addr)
+			if err := s.Transport.Dial(addr); err != nil {
+				log.Println("dial err", err)
+
+			}
+		}(addr)
+	}
+	return nil
+}
+
 func (s *FileServer) Start() error {
 	if err := s.Transport.ListenAndAccept(); err != nil {
 		return err
 	}
+
+	s.bootstrapNetwork()
 
 	s.Loop()
 	return nil

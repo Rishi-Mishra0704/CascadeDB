@@ -38,8 +38,20 @@ func NewTcpPeer(conn net.Conn, outbound bool) *TCPPeer {
 	}
 }
 
+// RemoteAddr implements the peer interface
+// which will return the remote address of its underlying connection
+func (p *TCPPeer) RemoteAddr() net.Addr {
+	return p.conn.RemoteAddr()
+}
+
 func (p *TCPPeer) Close() error {
 	return p.conn.Close()
+}
+
+// Send implements the peer interface, which will send the message to the remote peer
+func (p *TCPPeer) Send(b []byte) error {
+	_, err := p.conn.Write(b)
+	return err
 }
 
 func NewTCPTransport(opts TcpTransportOpts) *TcpTransport {
@@ -70,6 +82,17 @@ func (t *TcpTransport) ListenAndAccept() error {
 	return nil
 }
 
+// Dial implements the transport interface
+func (t *TcpTransport) Dial(addr string) error {
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return nil
+	}
+	go t.handleConn(conn, true)
+	return nil
+
+}
+
 // Close implements the transport interface, which will close the connection
 func (t *TcpTransport) Close() error {
 	return t.listener.Close()
@@ -88,19 +111,19 @@ func (t *TcpTransport) startAcceptLoop() {
 		}
 		fmt.Printf("New incoming connection %v\n", conn)
 
-		go t.handleConn(conn)
+		go t.handleConn(conn, false)
 
 	}
 }
 
-func (t *TcpTransport) handleConn(conn net.Conn) {
+func (t *TcpTransport) handleConn(conn net.Conn, outbound bool) {
 
 	var err error
 	defer func() {
 		fmt.Printf("Dropping peer connection%s", err)
 		conn.Close()
 	}()
-	peer := NewTcpPeer(conn, true)
+	peer := NewTcpPeer(conn, outbound)
 
 	if err := t.HandShakeFunc(peer); err != nil {
 

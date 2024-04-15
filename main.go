@@ -2,35 +2,37 @@ package main
 
 import (
 	"log"
-	"time"
 
 	"github.com/Rishi-Mishra0704/distributed-cas/p2p"
 	"github.com/Rishi-Mishra0704/distributed-cas/server"
 )
 
-func main() {
+func makeServer(listenAddr string, nodes ...string) *server.FileServer {
 
 	tcpTransportOpts := p2p.TcpTransportOpts{
-		ListenAddr:    ":3000",
+		ListenAddr:    listenAddr,
 		HandShakeFunc: p2p.NOPHandShakeFunc,
 		Decoder:       p2p.DefaultDecoder{},
-		// Todo OnPeer func
 	}
 
 	tcpTransport := p2p.NewTCPTransport(tcpTransportOpts)
 
 	fileServerOpts := server.FileServerOpts{
-		StorageRoot:       "3000_network",
+		StorageRoot:       listenAddr + "_network",
 		PathTransformFunc: server.CasPathTransformFunc,
 		Transport:         tcpTransport,
+		BootstrapNodes:    nodes,
 	}
-	fileServer := server.NewFileServer(fileServerOpts)
-	go func() {
-		time.Sleep(3 * time.Second)
-		fileServer.Stop()
-	}()
-	if err := fileServer.Start(); err != nil {
-		log.Fatalf("Error starting file server: %v", err)
-	}
+	s := server.NewFileServer(fileServerOpts)
+	tcpTransport.OnPeer = s.OnPeer
+	return s
+}
 
+func main() {
+	s1 := makeServer(":3000", "")
+	s2 := makeServer(":4000", ":3000")
+	go func() {
+		log.Fatal(s1.Start())
+	}()
+	s2.Start()
 }
