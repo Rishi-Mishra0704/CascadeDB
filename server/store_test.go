@@ -31,7 +31,7 @@ func TestDeleteFunc(t *testing.T) {
 
 	data := []byte("some jpg in bytes")
 
-	if err := s.WriteStream(key, bytes.NewReader(data)); err != nil {
+	if _, err := s.WriteStream(key, bytes.NewReader(data)); err != nil {
 		t.Error(err)
 	}
 	if err := s.Delete(key); err != nil {
@@ -48,7 +48,7 @@ func TestStore(t *testing.T) {
 
 		data := generateRandomBytes(100)
 
-		if err := s.WriteStream(key, bytes.NewReader(data)); err != nil {
+		if _, err := s.WriteStream(key, bytes.NewReader(data)); err != nil {
 			t.Error(err)
 		}
 

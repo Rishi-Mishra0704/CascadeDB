@@ -36,9 +36,9 @@ func main() {
 	go func() {
 		log.Fatal(s1.Start())
 	}()
-	time.Sleep(1 * time.Second)
+	time.Sleep(4 * time.Second)
 	go s2.Start()
-	time.Sleep(5 * time.Second)
+	time.Sleep(4 * time.Second)
 	data := bytes.NewReader([]byte("some very big data file!!!"))
 	s2.StoreData("myprivatebigdata", data)
 
