@@ -1,9 +1,9 @@
-package main
+package server
 
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"testing"
 )
 
@@ -43,7 +43,7 @@ func TestStore(t *testing.T) {
 			t.Error(err)
 		}
 
-		b, _ := ioutil.ReadAll(r)
+		b, _ := io.ReadAll(r)
 		if string(b) != string(data) {
 			t.Errorf("want %s have %s", data, b)
 		}

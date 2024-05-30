@@ -7,10 +7,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/anthdm/foreverstore/p2p"
+	"github.com/Rishi-Mishra0704/CascadeDB/p2p"
+	"github.com/Rishi-Mishra0704/CascadeDB/server"
 )
 
-func makeServer(listenAddr string, nodes ...string) *FileServer {
+func makeServer(listenAddr string, nodes ...string) *server.FileServer {
 	tcptransportOpts := p2p.TCPTransportOpts{
 		ListenAddr:    listenAddr,
 		HandshakeFunc: p2p.NOPHandshakeFunc,
@@ -18,15 +19,15 @@ func makeServer(listenAddr string, nodes ...string) *FileServer {
 	}
 	tcpTransport := p2p.NewTCPTransport(tcptransportOpts)
 
-	fileServerOpts := FileServerOpts{
-		EncKey:            newEncryptionKey(),
+	fileServerOpts := server.FileServerOpts{
+		EncKey:            server.NewEncryptionKey(),
 		StorageRoot:       listenAddr + "_network",
-		PathTransformFunc: CASPathTransformFunc,
+		PathTransformFunc: server.CASPathTransformFunc,
 		Transport:         tcpTransport,
 		BootstrapNodes:    nodes,
 	}
 
-	s := NewFileServer(fileServerOpts)
+	s := server.NewFileServer(fileServerOpts)
 
 	tcpTransport.OnPeer = s.OnPeer
 
@@ -52,7 +53,7 @@ func main() {
 		data := bytes.NewReader([]byte("my big data file here!"))
 		s3.Store(key, data)
 
-		if err := s3.store.Delete(s3.ID, key); err != nil {
+		if err := s3.FileStore.Delete(s3.ID, key); err != nil {
 			log.Fatal(err)
 		}
 

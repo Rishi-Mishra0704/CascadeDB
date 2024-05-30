@@ -1,6 +1,6 @@
-module github.com/Rishi-Mishra0704/distributed-cas
+module github.com/Rishi-Mishra0704/CascadeDB
 
-go 1.22.1
+go 1.22.2
 
 require github.com/stretchr/testify v1.9.0
 
